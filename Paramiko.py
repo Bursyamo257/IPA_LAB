@@ -37,12 +37,23 @@ for device in devices:
         )
         print(f"Successfully connected to {device['name']}!")
         
-        # ทดสอบส่งคำสั่งตรวจสอบสถานะ
+        # 4. ดึงคำสั่ง show ip interface brief ออกมาแสดงผล
         stdin, stdout, stderr = client.exec_command("show ip interface brief")
         output = stdout.read().decode('utf-8')
         print(f"--- Output from {device['name']} ---")
         print(output)
         
+        # 5. ดึง running-config เฉพาะของ R0 แล้วบันทึกลงไฟล์ R0_running_config.txt
+        if device["name"] == "R0":
+            print("Fetching running-configuration for R0...")
+            stdin, stdout, stderr = client.exec_command("show running-config")
+            config_output = stdout.read().decode('utf-8')
+            
+            config_filename = "R0_running_config.txt"
+            with open(config_filename, "w", encoding="utf-8") as f:
+                f.write(config_output)
+            print(f"Successfully saved {config_filename}!\n")
+            
     except Exception as e:
         print(f"Failed to connect to {device['name']}: {e}\n")
     finally:
