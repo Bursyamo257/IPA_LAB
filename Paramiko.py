@@ -13,48 +13,33 @@ devices = [
 username = "cisco"
 key_filename = os.path.expanduser("C:\\Users\\KP\\Downloads\\SSH")
 
-# 2. วนลูปเชื่อมต่อแต่ละอุปกรณ์
-for device in devices:
-    print(f"==========================================")
-    print(f"Connecting to {device['name']} ({device['host']})...")
-    
-    # สร้าง Paramiko SSHClient Object
+key = paramiko.RSAKey.from_private_key_file(key_filename)
+
+for dev in devices:
+    print(f"Connecting to {dev['name']} ({dev['host']})...")
+
     client = paramiko.SSHClient()
-    
-    # ยอมรับ Host Key อัตโนมัติ (สำหรับระบบแล็บ)
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
     try:
-        # 3. เรียกใช้งาน client.connect() โดยใช้ key_filename สำหรับ Public Key Auth
         client.connect(
-            hostname=device["host"],
+            hostname=dev["host"],
             username=username,
-            key_filename=key_filename,  # ระบุ SSH Private Key File
-            port=22,
-            timeout=10,
-            look_for_keys=True,
-            allow_agent=True
+            pkey=key,
+            look_for_keys=False,
+            allow_agent=False,
+            disabled_algorithms=dict(pubkeys=["rsa-sha2-256", "rsa-sha2-512"])
         )
-        print(f"Successfully connected to {device['name']}!")
+        print(f"Successfully SSH to {dev['name']}")
         
-        # 4. ดึงคำสั่ง show ip interface brief ออกมาแสดงผล
-        stdin, stdout, stderr = client.exec_command("show ip interface brief")
-        output = stdout.read().decode('utf-8')
-        print(f"--- Output from {device['name']} ---")
-        print(output)
-        
-        # 5. ดึง running-config เฉพาะของ R0 แล้วบันทึกลงไฟล์ R0_running_config.txt
-        if device["name"] == "R0":
-            print("Fetching running-configuration for R0...")
+        if dev["name"] == "R0":
             stdin, stdout, stderr = client.exec_command("show running-config")
-            config_output = stdout.read().decode('utf-8')
+            output = stdout.read().decode('utf-8')
+
+            with open("R0-running.cfg", "w") as f:
+                f.write(output)
+            print("Saved R0 running-config to R0-running.cfg")
             
-            config_filename = "R0_running_config.txt"
-            with open(config_filename, "w", encoding="utf-8") as f:
-                f.write(config_output)
-            print(f"Successfully saved {config_filename}!\n")
-            
-    except Exception as e:
-        print(f"Failed to connect to {device['name']}: {e}\n")
-    finally:
         client.close()
+    except Exception as e:
+        print(f"Failed to connect to {dev['name']}: {e}")
