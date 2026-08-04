@@ -1,0 +1,51 @@
+{% for ospf in ospf_configs %}
+router ospf {{ ospf.process_id }}{% if ospf.vrf %} vrf {{ ospf.vrf }}{% endif %}
+{% for net in ospf.networks %}
+ network {{ net.subnet }} {{ net.wildcard }} area {{ net.area }}
+{% endfor %}
+{% if ospf.default_originate %}
+ default-information originate always
+{% endif %}
+exit
+{% endfor %}
+
+{% if ospf_interfaces %}
+{% for intf in ospf_interfaces %}
+interface {{ intf.name }}
+ ip ospf {{ intf.process_id }} area {{ intf.area }}
+exit
+{% endfor %}
+{% endif %}
+
+{% if static_routes %}
+{% for route in static_routes %}
+ip route{% if route.vrf %} vrf {{ route.vrf }}{% endif %} {{ route.prefix }} {{ route.mask }} {{ route.next_hop }}
+{% endfor %}
+{% endif %}
+
+{% if nat_config %}
+{% for intf in nat_config.inside_interfaces %}
+interface {{ intf }}
+ ip nat inside
+{% endfor %}
+interface {{ nat_config.outside_interface }}
+ ip nat outside
+exit
+access-list {{ nat_config.acl_id }} permit {{ nat_config.acl_subnet }} {{ nat_config.acl_wildcard }}
+ip nat inside source list {{ nat_config.acl_id }} interface {{ nat_config.outside_interface }}{% if nat_config.vrf %} vrf {{ nat_config.vrf }}{% endif %} overload
+{% endif %}
+
+{% for ip in acl_allowed_ips %}
+access-list 10 permit {{ ip.subnet }} {{ ip.wildcard }}
+{% endfor %}
+line vty 0 15
+ access-class 10 in
+exit
+
+{% if dns_config %}
+ip dns server
+ip domain-lookup
+{% for server in dns_config.servers %}
+ip name-server{% if dns_config.vrf %} vrf {{ dns_config.vrf }}{% endif %} {{ server }}
+{% endfor %}
+{% endif %}
