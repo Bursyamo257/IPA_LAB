@@ -88,7 +88,7 @@ r2_commands = [
     "ip nat outside",
     "exit",
     "access-list 1 permit 10.7.7.0 0.0.0.255",
-    "ip nat inside source list 1 interface GigabitEthernet0/3 overload",
+    "ip nat inside source list 1 interface GigabitEthernet0/3 vrf Control-Data overload",
     "access-list 10 permit 172.31.3.0 0.0.0.15",
     "access-list 10 permit 10.30.6.0 0.0.0.255",
     "line vty 0 15",
@@ -96,6 +96,7 @@ r2_commands = [
     "exit",
     "ip dns server",
     "ip domain-lookup",
+    "ip name-server vrf Control-Data 192.168.122.1",
     "ip name-server vrf Control-Data 8.8.8.8",
     "ip name-server vrf Control-Data 1.1.1.1",
 ]
